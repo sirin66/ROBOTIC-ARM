@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3-DOF Robotic Manipulator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: #0b0e14;
+            color: #d1d5db;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #viewport {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .ui-overlay {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            z-index: 10;
+            width: 370px;
+            max-height: calc(100vh - 32px);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            pointer-events: none;
+        }
+
+        .card {
+            background: rgba(18, 22, 31, 0.92);
+            border: 1px solid #262e3d;
+            border-radius: 8px;
+            padding: 16px;
+            backdrop-filter: blur(10px);
+            pointer-events: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #262e3d;
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #f3f4f6;
+        }
+
+        .status-badge {
+            font-size: 10px;
+            font-weight: 600;
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.12);
+            padding: 2px 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #9ca3af;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type=range] {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #1f2937;
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #f97316;
+            cursor: pointer;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 6px rgba(249, 115, 22, 0.6);
+            transition: transform 0.1s;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        input[type=number] {
+            width: 72px;
+            height: 28px;
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 5px;
+            color: #38bdf8;
+            font-family: monospace;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 6px;
+            text-align: right;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        input[type=number]:focus {
+            border-color: #38bdf8;
+        }
+
+        .presets {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .btn {
+            background: #1f2937;
+            color: #e5e7eb;
+            border: 1px solid #374151;
+            border-radius: 5px;
+            padding: 6px 4px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+
+        .btn:hover {
+            background: #374151;
+            color: #ffffff;
+            border-color: #6b7280;
+        }
+
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .telemetry-item {
+            background: #111827;
+            border: 1px solid #262e3d;
+            border-radius: 6px;
+            padding: 8px 4px;
+            text-align: center;
+        }
+
+        .telemetry-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #9ca3af;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .telemetry-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #f97316;
+            font-family: monospace;
+        }
+
+        .reach-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            padding: 6px 10px;
+            background: #111827;
+            border: 1px solid #262e3d;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .reach-val {
+            font-family: monospace;
+            font-weight: 700;
+            color: #38bdf8;
+        }
+
+        .matrix-container {
+            background: #0b0e14;
+            border: 1px solid #262e3d;
+            border-radius: 5px;
+            padding: 8px;
+            font-family: monospace;
+            font-size: 10px;
+            color: #9ca3af;
+            line-height: 1.4;
+        }
+
+        .matrix-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            text-align: right;
+            padding: 1px 0;
+        }
+
+        .matrix-row span:last-child {
+            color: #38bdf8;
+            font-weight: 700;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            background: rgba(18, 22, 31, 0.88);
+            border: 1px solid #262e3d;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 11px;
+            color: #9ca3af;
+            z-index: 10;
+            pointer-events: none;
+            line-height: 1.5;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <div id="viewport"></div>
+
+    <div class="ui-overlay">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Joint Controls</span>
+                <span class="status-badge">ACTIVE</span>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>θ1 (Waist Azimuth)</span>
+                    <span style="font-size: 10px; color: #6b7280;">[-180°, 180°]</span>
+                </div>
+                <div class="input-row">
+                    <input type="range" id="q1-slider" min="-180" max="180" step="0.5" value="35">
+                    <input type="number" id="q1-num" min="-180" max="180" step="0.5" value="35">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>θ2 (Shoulder Pitch)</span>
+                    <span style="font-size: 10px; color: #6b7280;">[-90°, 90°]</span>
+                </div>
+                <div class="input-row">
+                    <input type="range" id="q2-slider" min="-90" max="90" step="0.5" value="45">
+                    <input type="number" id="q2-num" min="-90" max="90" step="0.5" value="45">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>θ3 (Elbow Flexion)</span>
+                    <span style="font-size: 10px; color: #6b7280;">[-135°, 135°]</span>
+                </div>
+                <div class="input-row">
+                    <input type="range" id="q3-slider" min="-135" max="135" step="0.5" value="30">
+                    <input type="number" id="q3-num" min="-135" max="135" step="0.5" value="30">
+                </div>
+            </div>
+
+            <div class="presets">
+                <button class="btn" onclick="setPose(0, 0, 0)">Home</button>
+                <button class="btn" onclick="setPose(35, 45, 30)">Reaching</button>
+                <button class="btn" onclick="setPose(-45, 60, -30)">Pick</button>
+                <button class="btn" onclick="setPose(0, 90, 0)">Upright</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Forward Kinematics</span>
+                <span style="font-size: 10px; color: #9ca3af;">Real-Time</span>
+            </div>
+
+            <div class="telemetry-grid">
+                <div class="telemetry-item">
+                    <div class="telemetry-label">X (m)</div>
+                    <div id="pos-x" class="telemetry-value">0.0000</div>
+                </div>
+                <div class="telemetry-item">
+                    <div class="telemetry-label">Y (m)</div>
+                    <div id="pos-y" class="telemetry-value">0.0000</div>
+                </div>
+                <div class="telemetry-item">
+                    <div class="telemetry-label">Z (m)</div>
+                    <div id="pos-z" class="telemetry-value">0.0000</div>
+                </div>
+            </div>
+
+            <div class="reach-row">
+                <span>Radial Distance (R)</span>
+                <span id="reach-val" class="reach-val">0.0000 m</span>
+            </div>
+
+            <div style="font-size: 10px; font-weight: 600; color: #9ca3af; margin-bottom: 4px;">TRANSFORMATION MATRIX T</div>
+            <div id="matrix-display" class="matrix-container"></div>
+        </div>
+    </div>
+
+    <div class="instructions">
+        <b>Direct 3D Interaction:</b> Click & drag links directly to rotate joints<br>
+        <b>Camera:</b> Orbit: Left Drag | Pan: Right Drag | Zoom: Scroll
+    </div>
+
+    <script>
+        const L1 = 0.50;
+        const L2 = 0.40;
+        const L3 = 0.30;
+
+        let targetQ = [35.0, 45.0, 30.0];
+        let currentQ = [35.0, 45.0, 30.0];
+
+        const container = document.getElementById("viewport");
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color("#0b0e14");
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.05, 50);
+        camera.position.set(1.4, 1.3, 1.4);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 0.45, 0);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+        dirLight.position.set(3, 5, 4);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        scene.add(dirLight);
+
+        const fillLight = new THREE.DirectionalLight(0x38bdf8, 0.3);
+        fillLight.position.set(-3, 2, -3);
+        scene.add(fillLight);
+
+        const grid = new THREE.GridHelper(1.8, 18, 0x262e3d, 0x161b24);
+        scene.add(grid);
+
+        for (let r of [0.25, 0.50, 0.75]) {
+            const ringGeo = new THREE.RingGeometry(r - 0.002, r + 0.002, 64);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0x262e3d, side: THREE.DoubleSide });
+            const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+            ringMesh.rotation.x = Math.PI / 2;
+            scene.add(ringMesh);
+        }
+
+        const matDarkBase = new THREE.MeshStandardMaterial({ color: 0x1f242d, roughness: 0.6, metalness: 0.3 });
+        const matTurret = new THREE.MeshStandardMaterial({ color: 0x2b3240, roughness: 0.5, metalness: 0.4 });
+        const matOrangeArm = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.35, metalness: 0.2 });
+        const matActuator = new THREE.MeshStandardMaterial({ color: 0xd1d5db, roughness: 0.3, metalness: 0.8 });
+        const matGripper = new THREE.MeshStandardMaterial({ color: 0x374151, roughness: 0.4, metalness: 0.4 });
+        const matJaw = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.3, metalness: 0.6 });
+
+        const interactiveMeshes = [];
+
+        function registerInteractable(mesh, jointId) {
+            mesh.userData.jointId = jointId;
+            interactiveMeshes.push(mesh);
+            return mesh;
+        }
+
+        const robotRoot = new THREE.Group();
+        scene.add(robotRoot);
+
+        const baseFlange = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.17, 0.035, 32), matDarkBase);
+        baseFlange.position.y = 0.0175;
+        baseFlange.castShadow = true;
+        robotRoot.add(baseFlange);
+
+        for (let i = 0; i < 8; i++) {
+            const ang = (i / 8) * Math.PI * 2;
+            const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.01, 12), matActuator);
+            bolt.position.set(0.135 * Math.cos(ang), 0.04, 0.135 * Math.sin(ang));
+            robotRoot.add(bolt);
+        }
+
+        const lowerColumn = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, L1 * 0.45, 24), matDarkBase);
+        lowerColumn.position.y = (L1 * 0.45) / 2 + 0.035;
+        robotRoot.add(lowerColumn);
+
+        const bearingRing = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.105, 0.025, 24), matActuator);
+        bearingRing.position.y = L1 * 0.45 + 0.035;
+        robotRoot.add(bearingRing);
+
+        const joint1Group = new THREE.Group();
+        joint1Group.position.y = 0;
+        robotRoot.add(joint1Group);
+
+        const upperTurretHeight = L1 - (L1 * 0.45 + 0.035);
+        const upperTurret = registerInteractable(
+            new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, upperTurretHeight, 24), matTurret.clone()),
+            1
+        );
+        upperTurret.position.y = (L1 * 0.45 + 0.035) + upperTurretHeight / 2;
+        upperTurret.castShadow = true;
+        joint1Group.add(upperTurret);
+
+        const shoulderOrigin = new THREE.Group();
+        shoulderOrigin.position.set(0, L1, 0);
+        joint1Group.add(shoulderOrigin);
+
+        const shMotor = registerInteractable(
+            new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.16, 24), matActuator.clone()),
+            2
+        );
+        shMotor.rotation.x = Math.PI / 2;
+        shMotor.castShadow = true;
+        shoulderOrigin.add(shMotor);
+
+        const joint2Group = new THREE.Group();
+        shoulderOrigin.add(joint2Group);
+
+        const arm2Mesh = registerInteractable(
+            new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.065, L2), matOrangeArm.clone()),
+            2
+        );
+        arm2Mesh.position.set(0, 0, L2 / 2);
+        arm2Mesh.castShadow = true;
+        joint2Group.add(arm2Mesh);
+
+        const elbowOrigin = new THREE.Group();
+        elbowOrigin.position.set(0, 0, L2);
+        joint2Group.add(elbowOrigin);
+
+        const elMotor = registerInteractable(
+            new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.14, 24), matActuator.clone()),
+            3
+        );
+        elMotor.rotation.x = Math.PI / 2;
+        elMotor.castShadow = true;
+        elbowOrigin.add(elMotor);
+
+        const joint3Group = new THREE.Group();
+        elbowOrigin.add(joint3Group);
+
+        const arm3Mesh = registerInteractable(
+            new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, L3), matOrangeArm.clone()),
+            3
+        );
+        arm3Mesh.position.set(0, 0, L3 / 2);
+        arm3Mesh.castShadow = true;
+        joint3Group.add(arm3Mesh);
+
+        const wristGroup = new THREE.Group();
+        wristGroup.position.set(0, 0, L3);
+        joint3Group.add(wristGroup);
+
+        const toolFlange = registerInteractable(
+            new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.02, 24), matActuator.clone()),
+            3
+        );
+        toolFlange.rotation.x = Math.PI / 2;
+        wristGroup.add(toolFlange);
+
+        const gripperBase = registerInteractable(
+            new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.07, 0.04), matGripper.clone()),
+            3
+        );
+        gripperBase.position.set(0, 0, 0.03);
+        wristGroup.add(gripperBase);
+
+        for (let sign of [-1, 1]) {
+            const finger = registerInteractable(
+                new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.012, 0.05), matActuator.clone()),
+                3
+            );
+            finger.position.set(0, sign * 0.022, 0.065);
+            wristGroup.add(finger);
+
+            const pad = registerInteractable(
+                new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.014, 0.018), matJaw.clone()),
+                3
+            );
+            pad.position.set(0, sign * 0.022, 0.082);
+            wristGroup.add(pad);
+        }
+
+        const toolAxes = new THREE.AxesHelper(0.12);
+        wristGroup.add(toolAxes);
+
+        const slider1 = document.getElementById("q1-slider");
+        const slider2 = document.getElementById("q2-slider");
+        const slider3 = document.getElementById("q3-slider");
+        const num1 = document.getElementById("q1-num");
+        const num2 = document.getElementById("q2-num");
+        const num3 = document.getElementById("q3-num");
+
+        function syncInputs(idx, val) {
+            targetQ[idx] = parseFloat(val);
+            if (idx === 0) { slider1.value = val; num1.value = val; }
+            if (idx === 1) { slider2.value = val; num2.value = val; }
+            if (idx === 2) { slider3.value = val; num3.value = val; }
+        }
+
+        slider1.addEventListener("input", (e) => syncInputs(0, e.target.value));
+        slider2.addEventListener("input", (e) => syncInputs(1, e.target.value));
+        slider3.addEventListener("input", (e) => syncInputs(2, e.target.value));
+
+        num1.addEventListener("change", (e) => syncInputs(0, Math.max(-180, Math.min(180, parseFloat(e.target.value) || 0))));
+        num2.addEventListener("change", (e) => syncInputs(1, Math.max(-90, Math.min(90, parseFloat(e.target.value) || 0))));
+        num3.addEventListener("change", (e) => syncInputs(2, Math.max(-135, Math.min(135, parseFloat(e.target.value) || 0))));
+
+        function setPose(q1, q2, q3) {
+            syncInputs(0, q1);
+            syncInputs(1, q2);
+            syncInputs(2, q3);
+        }
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let isDragging = false;
+        let activeJoint = null;
+        let startPointer = { x: 0, y: 0 };
+        let startAngle = 0;
+        let hoveredMesh = null;
+
+        window.addEventListener("pointermove", (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            if (isDragging && activeJoint !== null) {
+                const dx = e.clientX - startPointer.x;
+                const dy = e.clientY - startPointer.y;
+
+                if (activeJoint === 1) {
+                    let nextVal = startAngle + dx * 0.4;
+                    nextVal = Math.max(-180, Math.min(180, nextVal));
+                    syncInputs(0, nextVal.toFixed(1));
+                } else if (activeJoint === 2) {
+                    let nextVal = startAngle - dy * 0.4;
+                    nextVal = Math.max(-90, Math.min(90, nextVal));
+                    syncInputs(1, nextVal.toFixed(1));
+                } else if (activeJoint === 3) {
+                    let nextVal = startAngle - dy * 0.4;
+                    nextVal = Math.max(-135, Math.min(135, nextVal));
+                    syncInputs(2, nextVal.toFixed(1));
+                }
+                return;
+            }
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(interactiveMeshes);
+
+            if (intersects.length > 0) {
+                const hit = intersects[0].object;
+                if (hoveredMesh !== hit) {
+                    if (hoveredMesh && hoveredMesh.material && hoveredMesh.material.emissive) {
+                        hoveredMesh.material.emissive.setHex(0x000000);
+                    }
+                    hoveredMesh = hit;
+                    if (hoveredMesh.material && hoveredMesh.material.emissive) {
+                        hoveredMesh.material.emissive.setHex(0x38bdf8);
+                        hoveredMesh.material.emissiveIntensity = 0.35;
+                    }
+                }
+                container.style.cursor = "grab";
+            } else {
+                if (hoveredMesh && hoveredMesh.material && hoveredMesh.material.emissive) {
+                    hoveredMesh.material.emissive.setHex(0x000000);
+                }
+                hoveredMesh = null;
+                container.style.cursor = "default";
+            }
+        });
+
+        window.addEventListener("pointerdown", (e) => {
+            if (e.target.closest(".ui-overlay")) return;
+
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(interactiveMeshes);
+
+            if (intersects.length > 0) {
+                const hit = intersects[0].object;
+                activeJoint = hit.userData.jointId;
+                isDragging = true;
+                controls.enabled = false;
+                startPointer = { x: e.clientX, y: e.clientY };
+                startAngle = targetQ[activeJoint - 1];
+                container.style.cursor = "grabbing";
+            }
+        });
+
+        window.addEventListener("pointerup", () => {
+            if (isDragging) {
+                isDragging = false;
+                activeJoint = null;
+                controls.enabled = true;
+                container.style.cursor = hoveredMesh ? "grab" : "default";
+            }
+        });
+
+        function updateKinematicsDisplay(q1Rad, q2Rad, q3Rad) {
+            const c1 = Math.cos(q1Rad);
+            const s1 = Math.sin(q1Rad);
+            const c2 = Math.cos(q2Rad);
+            const s2 = Math.sin(q2Rad);
+            const c3 = Math.cos(q3Rad);
+            const s3 = Math.sin(q3Rad);
+            const c23 = Math.cos(q2Rad + q3Rad);
+            const s23 = Math.sin(q2Rad + q3Rad);
+
+            const px = c1 * (L2 * c2 + L3 * c23);
+            const py = s1 * (L2 * c2 + L3 * c23);
+            const pz = L1 + L2 * s2 + L3 * s23;
+            const reach = Math.sqrt(px * px + py * py + pz * pz);
+
+            document.getElementById("pos-x").innerText = px.toFixed(4);
+            document.getElementById("pos-y").innerText = py.toFixed(4);
+            document.getElementById("pos-z").innerText = pz.toFixed(4);
+            document.getElementById("reach-val").innerText = reach.toFixed(4) + " m";
+
+            const T = [
+                [c1 * c23, -c1 * s23,  s1, px],
+                [s1 * c23, -s1 * s23, -c1, py],
+                [s23,       c23,       0,  pz],
+                [0,         0,         0,  1.0]
+            ];
+
+            let matrixHtml = "";
+            for (let r = 0; r < 4; r++) {
+                matrixHtml += '<div class="matrix-row">';
+                for (let c = 0; c < 4; c++) {
+                    matrixHtml += `<span>${T[r][c].toFixed(3)}</span>`;
+                }
+                matrixHtml += '</div>';
+            }
+            document.getElementById("matrix-display").innerHTML = matrixHtml;
+        }
+
+        window.addEventListener("resize", () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const lerpFactor = isDragging ? 0.45 : 0.18;
+            currentQ[0] += (targetQ[0] - currentQ[0]) * lerpFactor;
+            currentQ[1] += (targetQ[1] - currentQ[1]) * lerpFactor;
+            currentQ[2] += (targetQ[2] - currentQ[2]) * lerpFactor;
+
+            const q1Rad = THREE.MathUtils.degToRad(currentQ[0]);
+            const q2Rad = THREE.MathUtils.degToRad(currentQ[1]);
+            const q3Rad = THREE.MathUtils.degToRad(currentQ[2]);
+
+            joint1Group.rotation.y = -q1Rad;
+            joint2Group.rotation.x = -q2Rad;
+            joint3Group.rotation.x = -q3Rad;
+
+            updateKinematicsDisplay(q1Rad, q2Rad, q3Rad);
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
