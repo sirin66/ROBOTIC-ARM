@@ -1,59 +1,34 @@
 # 3-DOF Revolute Robotic Manipulator (RRR)
 
-A robotics engineering implementation of a 3-DOF spatial articulated manipulator (waist-shoulder-elbow) using Peter Corke's `roboticstoolbox-python` and standard Denavit-Hartenberg (DH) parameters.
+A robotics engineering implementation of a 3-DOF spatial articulated manipulator (waist-shoulder-elbow) featuring:
+- Forward kinematics formulation using standard Denavit-Hartenberg (DH) parameters
+- Numerical calculation via Peter Corke's `roboticstoolbox-python`
+- Detailed 3D CAD volumetric rendering using Matplotlib
+- Real-time interactive 3D Web Interface using Flask and Three.js
 
 ---
 
-## 1. Kinematic Architecture
+## Kinematic Architecture
 
-- **Joint 1 (Base / Waist)**: Revolute joint about the vertical $Z_0$ axis (Azimuth angle $q_1$).
-- **Joint 2 (Shoulder)**: Revolute joint about horizontal $Z_1$ axis (Elevation pitch angle $q_2$).
-- **Joint 3 (Elbow)**: Revolute joint about horizontal $Z_2$ axis (Flexion/extension pitch angle $q_3$).
+- **Joint 1 (Base / Waist)**: Revolute joint about vertical $Z_0$ axis (Azimuth $q_1$)
+- **Joint 2 (Shoulder)**: Revolute joint about horizontal $Z_1$ axis (Elevation pitch $q_2$)
+- **Joint 3 (Elbow)**: Revolute joint about horizontal $Z_2$ axis (Flexion pitch $q_3$)
 
-### Link Dimensions (Configurable)
+### Link Dimensions
 - $L_1 = 0.50\text{ m}$ (Base height)
 - $L_2 = 0.40\text{ m}$ (Upper arm length)
 - $L_3 = 0.30\text{ m}$ (Forearm length)
 
----
+### Standard DH Parameters
 
-## 2. Denavit-Hartenberg (Standard DH) Parameters
+| Link $i$ | Joint Angle $\theta_i$ | Offset $d_i$ | Length $a_i$ | Twist $\alpha_i$ | Range |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| **1** | $q_1$ | $0.50\text{ m}$ | $0$ | $+90^\circ$ | $[-180^\circ, +180^\circ]$ |
+| **2** | $q_2$ | $0$ | $0.40\text{ m}$ | $0^\circ$ | $[-90^\circ, +90^\circ]$ |
+| **3** | $q_3$ | $0$ | $0.30\text{ m}$ | $0^\circ$ | $[-135^\circ, +135^\circ]$ |
 
-According to the standard DH convention:
+### Forward Kinematics Equations
 
-| Link $i$ | Joint Variable $\theta_i$ | Link Offset $d_i$ | Link Length $a_i$ | Link Twist $\alpha_i$ |
-| :---: | :---: | :---: | :---: | :---: |
-| **1** | $q_1$ | $L_1 = 0.50\text{ m}$ | $0$ | $+90^\circ$ ($+\pi/2\text{ rad}$) |
-| **2** | $q_2$ | $0$ | $L_2 = 0.40\text{ m}$ | $0^\circ$ ($0\text{ rad}$) |
-| **3** | $q_3$ | $0$ | $L_3 = 0.30\text{ m}$ | $0^\circ$ ($0\text{ rad}$) |
-
----
-
-## 3. Forward Kinematics Formulation
-
-The general homogeneous transformation matrix $A_i$ from frame $i-1$ to frame $i$ is:
-
-$$A_i = \begin{bmatrix}
-\cos\theta_i & -\sin\theta_i \cos\alpha_i & \sin\theta_i \sin\alpha_i & a_i \cos\theta_i \\
-\sin\theta_i & \cos\theta_i \cos\alpha_i & -\cos\theta_i \sin\alpha_i & a_i \sin\theta_i \\
-0 & \sin\alpha_i & \cos\alpha_i & d_i \\
-0 & 0 & 0 & 1
-\end{bmatrix}$$
-
-Multiplying the consecutive transformations $T_0^3 = A_1 A_2 A_3$ yields:
-
-$$T_0^3 = \begin{bmatrix}
-c_1 c_{23} & -c_1 s_{23} & s_1 & c_1 (L_2 c_2 + L_3 c_{23}) \\
-s_1 c_{23} & -s_1 s_{23} & -c_1 & s_1 (L_2 c_2 + L_3 c_{23}) \\
-s_{23} & c_{23} & 0 & L_1 + L_2 s_2 + L_3 s_{23} \\
-0 & 0 & 0 & 1
-\end{bmatrix}$$
-
-Where:
-- $c_i = \cos(q_i)$, $s_i = \sin(q_i)$
-- $c_{23} = \cos(q_2 + q_3)$, $s_{23} = \sin(q_2 + q_3)$
-
-### End-Effector Position:
 $$\begin{cases}
 p_x = \cos(q_1) \cdot \left[ L_2 \cos(q_2) + L_3 \cos(q_2 + q_3) \right] \\
 p_y = \sin(q_1) \cdot \left[ L_2 \cos(q_2) + L_3 \cos(q_2 + q_3) \right] \\
@@ -62,43 +37,77 @@ p_z = L_1 + L_2 \sin(q_2) + L_3 \sin(q_2 + q_3)
 
 ---
 
-## 4. Setup & Execution
+## Installation
 
-### Prerequisites
-- Python 3.10+ installed
+Clone the repository and install dependencies:
 
-### Step 1: Clone / Navigate to directory
 ```bash
-cd "c:\Users\sirin\Desktop\robotic arm"
-```
-
-### Step 2: Create and activate virtual environment
-```bash
-# Windows PowerShell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-### Step 3: Install dependencies
-```bash
+git clone https://github.com/sirin66/ROBOTIC-ARM.git
+cd ROBOTIC-ARM
 pip install -r requirements.txt
 ```
 
-### Step 4: Run the kinematics & visualization
+---
+
+## Terminal Commands to Run Every File
+
+### 1. Launch the Real-Time 3D Web Application
+Starts the Flask server hosting the interactive Three.js 3D dashboard:
+```bash
+python app.py
+```
+Open **`http://127.0.0.1:5000`** in your browser. Features live dual-controls (sliders + number inputs), direct 3D link manipulation, and instant $X, Y, Z$ forward kinematics telemetry.
+
+---
+
+### 2. Run Forward Kinematics Verification & Poses
+Computes and verifies analytical vs. toolbox kinematics for multiple test poses:
 ```bash
 python main.py
 ```
 
-### Step 5: Render the High-Definition 3D CAD-like Model
+---
+
+### 3. Run Standalone Clean Kinematics & Plot
+Executes the self-contained script and outputs matrix, positions, and saves `robot_model.png`:
 ```bash
-# Render and save high-resolution CAD image:
+python robot_arm_3dof.py
+```
+
+---
+
+### 4. Render High-Resolution 3D CAD Model
+Generates a volumetric CAD model with actuators, links, and parallel gripper, saving to `cad_robot_render.png`:
+```bash
 python run_cad.py
+```
 
-# Specify custom joint angles (e.g. q1=45°, q2=30°, q3=-20°):
-python run_cad.py --q 45 30 -20
+---
 
-# Open interactive rotatable 3D CAD window:
+### 5. Open Interactive Rotatable 3D CAD Window
+Opens an interactive Matplotlib 3D window where you can orbit, zoom, and inspect the CAD arm:
+```bash
 python run_cad.py --show
 ```
 
-Generated 3D renderings are saved to `manipulator_3d_pose.png` and `cad_robot_render.png`.
+---
+
+### 6. Render CAD Model with Custom Joint Angles
+Pass any joint angles in degrees ($q_1, q_2, q_3$):
+```bash
+python run_cad.py --q 45 30 -20
+python run_cad.py --show --q 45 30 -20
+```
+
+---
+
+## Open All Project Files in Editor from Terminal
+
+To open all project files simultaneously in VS Code from terminal:
+```bash
+code .
+```
+Or open specific script files:
+```bash
+code app.py templates/index.html robot_arm_3dof.py cad_model.py run_cad.py main.py
+```
