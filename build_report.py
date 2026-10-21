@@ -47,9 +47,9 @@ def create_report():
 
     data = [
         ("Project Title:", "3-DOF Revolute Robotic Manipulator (RRR)"),
-        ("Group Members:", "1. [Student Name 1] - [Roll Number / ID]\n2. [Student Name 2] - [Roll Number / ID]\n3. [Student Name 3] - [Roll Number / ID]"),
-        ("Department:", "[Department Name, e.g., Mechanical / Robotics / Mechatronics]"),
-        ("Institution:", "[College / University Name]"),
+        ("Student Name:", "SIRIN J DEVASSIA"),
+        ("Roll No:", "28"),
+        ("Department:", "Robotics and Artificial Intelligence (RAI)"),
         ("Academic Year:", "2025 - 2026")
     ]
 

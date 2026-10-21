@@ -118,9 +118,9 @@ def generate_pdf():
     # Meta Info Table
     meta_data = [
         [Paragraph("<b>Project Title:</b>", body_style), Paragraph("3-DOF Revolute Robotic Manipulator (RRR)", body_style)],
-        [Paragraph("<b>Group Members:</b>", body_style), Paragraph("1. [Student Name 1] - [Roll Number / ID]<br/>2. [Student Name 2] - [Roll Number / ID]<br/>3. [Student Name 3] - [Roll Number / ID]", body_style)],
-        [Paragraph("<b>Department:</b>", body_style), Paragraph("[Department Name, e.g., Mechanical / Robotics / Mechatronics]", body_style)],
-        [Paragraph("<b>Institution:</b>", body_style), Paragraph("[College / University Name]", body_style)],
+        [Paragraph("<b>Student Name:</b>", body_style), Paragraph("SIRIN J DEVASSIA", body_style)],
+        [Paragraph("<b>Roll No:</b>", body_style), Paragraph("28", body_style)],
+        [Paragraph("<b>Department:</b>", body_style), Paragraph("Robotics and Artificial Intelligence (RAI)", body_style)],
         [Paragraph("<b>Academic Year:</b>", body_style), Paragraph("2025 - 2026", body_style)]
     ]
 
